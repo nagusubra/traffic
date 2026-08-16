@@ -63,7 +63,7 @@ FORKS_FIELDS = ["date", "forks"]
 COMMITS_FIELDS = ["week_start", "total"]
 ISSUES_FIELDS = ["date", "issues_opened", "issues_closed", "prs_opened", "prs_closed", "prs_merged"]
 
-BADGE_COLOR = "#2563eb"
+BADGE_COLOR = "#475569"
 
 
 def log(*args) -> None:
