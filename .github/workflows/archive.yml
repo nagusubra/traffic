@@ -1,0 +1,48 @@
+name: Archive traffic
+
+on:
+  schedule:
+    - cron: "23 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: archive-traffic
+  cancel-in-progress: true
+
+jobs:
+  archive:
+    runs-on: ubuntu-latest
+    if: github.event.repository.fork == false
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Archive traffic
+        env:
+          # Fine-grained PAT (secret GH_TRAFFIC_TOKEN) with traffic read access
+          # to each source repo below. Push below uses GITHUB_TOKEN.
+          GH_TOKEN: ${{ secrets.GH_TRAFFIC_TOKEN }}
+        run: |
+          set -e
+          # Add new source repos here; data lands in .metrics/data/<repo>/ and
+          # doc/metric/<repo>/ automatically.
+          for repo in nagusubra/timeseries-qc nagusubra/industry-hackathon-lab; do
+            echo "::group::archiving $repo"
+            GITHUB_REPOSITORY=$repo python3 .github/scripts/archive_traffic.py
+            echo "::endgroup::"
+          done
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .metrics doc/metric
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(metrics): archive traffic data ($(date -u +%Y-%m-%dT%H:%MZ))"
+            git push
+          else
+            echo "No changes to commit"
+          fi

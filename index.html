@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>nagusubra · repository traffic</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230B1120'/%3E%3Crect x='118' y='268' width='68' height='132' rx='18' fill='%23FFFFFF'/%3E%3Crect x='222' y='188' width='68' height='212' rx='18' fill='%23FFFFFF'/%3E%3Crect x='326' y='108' width='68' height='292' rx='18' fill='%23FFFFFF'/%3E%3Ccircle cx='368' cy='368' r='92' fill='%2316A34A'/%3E%3Cpath d='M318 370 L352 404 L424 318' fill='none' stroke='%23FFFFFF' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1120; --surface: #111A2E; --surface-2: #0E1626;
+    --border: rgba(148, 163, 184, .14); --border-strong: rgba(148, 163, 184, .28);
+    --text: #E5E7EB; --muted: #94A3B8; --faint: #64748B;
+    --primary: #2563EB; --good: #16A34A;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: dark; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: "Roboto", system-ui, -apple-system, sans-serif;
+    font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- masthead ---------- */
+  .mast { position: sticky; top: 0; z-index: 10; background: rgba(11, 17, 32, .86); backdrop-filter: blur(8px); border-bottom: 1px solid var(--border); }
+  .mast-inner { max-width: 1140px; margin: 0 auto; padding: 14px 28px; display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+  .brand { display: inline-flex; align-items: center; gap: 10px; color: #fff; text-decoration: none; }
+  .brand svg { width: 24px; height: 24px; border-radius: 6px; display: block; }
+  .brand-name { font-size: 14px; font-weight: 700; letter-spacing: -.01em; }
+  .mast-links { display: flex; align-items: center; gap: 4px; }
+  .mast-links a { color: #CBD5E1; text-decoration: none; font-size: 13px; font-weight: 500; padding: 6px 10px; border-radius: 6px; }
+  .mast-links a:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+
+  /* ---------- layout ---------- */
+  .page { max-width: 1140px; margin: 0 auto; padding: 40px 28px 64px; }
+  .page-head { display: flex; align-items: center; justify-content: space-between; gap: 24px; flex-wrap: wrap; border-bottom: 1px solid var(--border); padding-bottom: 18px; margin-bottom: 26px; }
+  h1 { font-size: 22px; font-weight: 650; letter-spacing: -.015em; line-height: 1.2; margin: 0 0 4px; }
+  .sub { font-size: 13.5px; color: var(--muted); }
+  .sub b { color: var(--text); font-weight: 600; }
+  .asof { font: 500 12px "Roboto Mono", monospace; color: var(--faint); }
+
+  /* ---------- tabs ---------- */
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 26px; }
+  .tabs a {
+    font: 600 12.5px "Roboto", sans-serif; color: var(--muted); text-decoration: none;
+    border: 1px solid var(--border); background: var(--surface-2); border-radius: 8px;
+    padding: 7px 14px; transition: color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .tabs a:hover { color: var(--text); border-color: var(--border-strong); }
+  .tabs a.on { background: var(--surface); color: var(--primary); border-color: var(--primary); box-shadow: 0 0 0 1px var(--primary); }
+
+  /* ---------- cards ---------- */
+  .cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 16px; }
+  .card {
+    display: flex; flex-direction: column; gap: 14px;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 20px; text-decoration: none; color: inherit;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .card:hover { border-color: var(--border-strong); transform: translateY(-1px); }
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+  .card-icon { width: 34px; height: 34px; border-radius: 8px; flex: 0 0 auto; display: grid; place-items: center; }
+  .card h2 { font-size: 15px; font-weight: 700; letter-spacing: -.01em; margin: 0 0 2px; }
+  .card .repo-path { font: 500 11px "Roboto Mono", monospace; color: var(--faint); }
+  .card p.desc { font-size: 13px; color: var(--muted); }
+  .card-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: auto; padding-top: 12px; border-top: 1px solid var(--border); }
+  .card-foot .go { font-size: 13px; font-weight: 600; color: var(--primary); }
+  .card-foot img { height: 20px; display: block; }
+  .card .links { display: flex; gap: 12px; font-size: 12.5px; }
+  .card .links a { color: var(--muted); text-decoration: none; }
+  .card .links a:hover { color: var(--text); }
+
+  footer { max-width: 1140px; margin: 0 auto; padding: 0 28px 48px; }
+  footer p { font-size: 12px; color: var(--faint); border-top: 1px solid var(--border); padding-top: 20px; }
+  footer a { color: var(--muted); text-decoration: none; }
+  footer a:hover { color: var(--text); }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <a class="brand" href="https://nagusubra.github.io/traffic/">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <rect width="512" height="512" rx="96" fill="#0B1120"/>
+        <rect x="118" y="268" width="68" height="132" rx="18" fill="#FFFFFF"/>
+        <rect x="222" y="188" width="68" height="212" rx="18" fill="#FFFFFF"/>
+        <rect x="326" y="108" width="68" height="292" rx="18" fill="#FFFFFF"/>
+        <circle cx="368" cy="368" r="92" fill="#16A34A"/>
+        <path d="M318 370 L352 404 L424 318" fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-name">traffic</span>
+    </a>
+    <nav class="mast-links">
+      <a href="https://github.com/nagusubra">GitHub</a>
+      <a href="https://github.com/nagusubra/traffic">Repo</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>Repository traffic</h1>
+      <p class="sub">Hourly snapshots of views, clones, community and code activity across
+        <b>nagusubra</b>&rsquo;s repositories, archived from the GitHub API.</p>
+    </div>
+    <span class="asof" id="asOf">&hellip;</span>
+  </div>
+
+  <div class="tabs" id="tabs" role="tablist" aria-label="Dashboards"></div>
+  <div class="cards" id="cards"></div>
+</main>
+
+<footer>
+  <p>Data is archived hourly by the <a href="https://github.com/nagusubra/traffic">nagusubra/traffic</a> workflow.
+  GitHub only exposes 14 days of traffic, so views/clones windows are kept from the first recorded day.</p>
+</footer>
+
+<script>
+(() => {
+  const REPO_BASE = "https://github.com/nagusubra";
+  const RAW_BASE = "https://raw.githubusercontent.com/nagusubra/traffic/main/doc/metric";
+  // Add future repos here: one object per dashboard. Files must exist at
+  // doc/metric/<slug>/ and .metrics/data/<slug>/ (the archiver writes both).
+  const DASHBOARDS = [
+    {
+      slug: "timeseries-qc",
+      name: "timeseries-qc",
+      desc: "Open-source time series data quality-control library: views, clones, and star/fork history.",
+      accent: "#2563EB",
+      repo: "timeseries-qc",
+      docs: "https://nagusubra.github.io/timeseries-qc/",
+    },
+    {
+      slug: "industry-hackathon-lab",
+      name: "industry-hackathon-lab",
+      desc: "Autonomous-agent industrialization challenge briefs and starter repos: engagement and reach.",
+      accent: "#16A34A",
+      repo: "industry-hackathon-lab",
+      docs: "https://nagusubra.github.io/industry-hackathon-lab/",
+    },
+  ];
+
+  const $ = id => document.getElementById(id);
+  const count = DASHBOARDS.length;
+  $("asOf").textContent = `${count} dashboard${count === 1 ? "" : "s"}`;
+
+  const tabs = $("tabs");
+  const cards = $("cards");
+
+  for (const d of DASHBOARDS) {
+    const t = document.createElement("a");
+    t.href = `doc/metric/${d.slug}/`;
+    t.textContent = d.name;
+    t.setAttribute("role", "tab");
+    tabs.appendChild(t);
+
+    const c = document.createElement("a");
+    c.className = "card";
+    c.href = `doc/metric/${d.slug}/`;
+
+    const iconHue = d.accent;
+    c.innerHTML = `
+      <div class="card-top">
+        <div>
+          <h2>${d.name}</h2>
+          <div class="repo-path">nagusubra/${d.repo}</div>
+        </div>
+        <span class="card-icon" style="background:${iconHue}1f;border:1px solid ${iconHue}40">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="${iconHue}" stroke-width="2.2" stroke-linecap="round">
+            <path d="M4 19 L9 12 L13 15 L20 5"/>
+            <path d="M15 5 h5 v5"/>
+          </svg>
+        </span>
+      </div>
+      <p class="desc">${d.desc}</p>
+      <div class="card-foot">
+        <span class="go">View dashboard &rarr;</span>
+        <img alt="total views" src="${RAW_BASE}/${d.slug}/badge.svg">
+      </div>
+      <div class="links">
+        <a href="${REPO_BASE}/${d.repo}">GitHub</a>
+        ${d.docs ? `<a href="${d.docs}">Docs</a>` : ""}
+        <a href="https://github.com/nagusubra/traffic/tree/main/.metrics/data/${d.slug}">Data</a>
+      </div>`;
+    cards.appendChild(c);
+  }
+})();
+</script>
+</body>
+</html>
