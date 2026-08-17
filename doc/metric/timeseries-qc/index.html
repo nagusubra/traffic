@@ -607,6 +607,8 @@
     if (!chart) return;
     const parent = canvas.parentElement;
     parent.querySelector(".empty")?.remove();
+    const existing = chart.getChart && chart.getChart(canvas);
+    if (existing) existing.destroy();
     const ctx = canvas.getContext("2d");
     new chart(ctx, {
       type: "line",
