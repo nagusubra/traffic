@@ -1,0 +1,827 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>nagusubra.github.io · repo analytics</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='96' fill='%230B1120'/%3E%3Crect x='118' y='268' width='68' height='132' rx='18' fill='%23FFFFFF'/%3E%3Crect x='222' y='188' width='68' height='212' rx='18' fill='%23FFFFFF'/%3E%3Crect x='326' y='108' width='68' height='292' rx='18' fill='%23FFFFFF'/%3E%3Ccircle cx='368' cy='368' r='92' fill='%2316A34A'/%3E%3Cpath d='M318 370 L352 404 L424 318' fill='none' stroke='%23FFFFFF' stroke-width='34' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<script src="vendor/chart.umd.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ui: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: "Roboto Mono", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f6f8fa;
+    --border: #e7eaf0;
+    --border-strong: #d4d9e2;
+    --text: #0f1728;
+    --muted: #5c6a7c;
+    --faint: #98a2b3;
+    --primary: #0f172a;
+    --primary-rgb: 15 23 42;
+    --navy: #0b1120;
+    --good: #16a34a;
+    --good-soft: rgba(22, 163, 74, .10);
+    --sus: #d97706;
+    --sus-soft: rgba(217, 119, 6, .12);
+    --bad: #dc2626;
+    --bad-soft: rgba(220, 38, 38, .10);
+    --grid: rgba(15, 23, 42, .055);
+    --shadow-sm: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 20px -10px rgba(15, 23, 42, .10);
+    --tip-bg: #0f172a;
+    --tip-fg: #f8fafc;
+    --ring: 0 0 0 3px rgba(15, 23, 42, .14);
+    --feat-tint: rgba(15, 23, 42, .03);
+    --bg-glow: radial-gradient(900px 340px at 50% -40px, rgba(15, 23, 42, .05), transparent 70%);
+  }
+  [data-theme="dark"] {
+    --bg: #0a0f19;
+    --surface: #111a2b;
+    --surface-2: #0d1524;
+    --border: #1e2a3c;
+    --border-strong: #29364d;
+    --text: #e7eef7;
+    --muted: #9aa9bc;
+    --faint: #5f7088;
+    --primary: #e2e8f0;
+    --primary-rgb: 226 232 240;
+    --good: #3dd68c;
+    --good-soft: rgba(61, 214, 140, .12);
+    --sus: #f5b24a;
+    --sus-soft: rgba(245, 178, 74, .14);
+    --bad: #f87171;
+    --bad-soft: rgba(248, 113, 113, .13);
+    --grid: rgba(148, 163, 184, .09);
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, .35), 0 8px 20px -10px rgba(0, 0, 0, .45);
+    --tip-bg: #e7eef7;
+    --tip-fg: #0f1728;
+    --ring: 0 0 0 3px rgba(226, 232, 240, .16);
+    --feat-tint: rgba(226, 232, 240, .05);
+    --bg-glow: radial-gradient(900px 340px at 50% -40px, rgba(226, 232, 240, .05), transparent 70%);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { color-scheme: light; }
+  html[data-theme="dark"] { color-scheme: dark; }
+  body {
+    background: var(--bg-glow), var(--bg);
+    color: var(--text);
+    font-family: var(--ui);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+    transition: background-color .25s ease, color .25s ease;
+  }
+
+  /* ---------- masthead ---------- */
+  .mast {
+    position: sticky; top: 0; z-index: 40;
+    background: linear-gradient(180deg, #0e1726, #0b1120 65%);
+    color: #e2e8f0;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, .05), 0 1px 0 rgba(0, 0, 0, .3);
+  }
+  .mast-inner {
+    max-width: 1160px; margin: 0 auto; padding: 0 28px;
+    height: 58px; display: flex; align-items: center; justify-content: space-between; gap: 20px;
+  }
+  .brand { display: inline-flex; align-items: center; gap: 11px; color: #fff; text-decoration: none; }
+  .brand svg { width: 24px; height: 24px; border-radius: 6px; display: block; }
+  .brand-name { font-size: 14.5px; font-weight: 600; letter-spacing: -.01em; }
+  .mast-links { display: flex; align-items: center; gap: 4px; }
+  .mast-links a {
+    color: #c3cddb; text-decoration: none; font-size: 13px; font-weight: 500;
+    padding: 7px 13px; border-radius: 9px; transition: color .15s ease, background .15s ease;
+  }
+  .mast-links a:hover { color: #fff; background: rgba(255, 255, 255, .08); }
+
+  /* ---------- layout ---------- */
+  .page { max-width: 1160px; margin: 0 auto; padding: 40px 28px 64px; }
+
+  .page-head {
+    display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; flex-wrap: wrap;
+    margin-bottom: 26px; padding-bottom: 20px; border-bottom: 1px solid var(--border);
+  }
+  h1 { font-size: 26px; font-weight: 700; letter-spacing: -.025em; line-height: 1.15; }
+  .sub { margin-top: 7px; font-size: 14px; color: var(--muted); }
+  .sub a { color: var(--text); text-decoration: none; border-bottom: 1px solid var(--border-strong); transition: color .15s ease, border-color .15s ease; }
+  .sub a:hover { color: var(--primary); border-color: var(--primary); }
+
+  .page-meta { display: flex; align-items: center; gap: 14px; padding-bottom: 3px; }
+  .asof { font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--faint); }
+  .asof b { color: var(--text); font-weight: 600; }
+  .page-meta img { height: 20px; display: block; }
+
+  /* ---------- controls ---------- */
+  .controls {
+    display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+    padding: 10px 12px; box-shadow: var(--shadow-sm); margin-bottom: 26px;
+  }
+  .seg { display: inline-flex; background: var(--surface-2); border: 1px solid var(--border); border-radius: 999px; padding: 3px; gap: 2px; }
+  .seg button {
+    border: 0; background: transparent; color: var(--muted);
+    font-family: var(--ui); font-size: 12.5px; font-weight: 600;
+    padding: 6px 14px; border-radius: 999px; cursor: pointer; transition: background .15s ease, color .15s ease, box-shadow .15s ease;
+  }
+  .seg button:hover { color: var(--text); }
+  .seg button.on { background: var(--surface); color: var(--primary); box-shadow: 0 1px 3px rgba(15, 23, 42, .10); }
+  .ctl-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .dates { display: flex; align-items: center; gap: 6px; }
+  .dates .sep { color: var(--faint); font-size: 12px; }
+  input[type="date"] {
+    font-family: var(--mono); font-size: 12px; font-weight: 500; color: var(--text);
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 6px 9px; outline: none; transition: border-color .15s ease, box-shadow .15s ease;
+  }
+  input[type="date"]:focus { border-color: var(--primary); box-shadow: var(--ring); }
+  .icon-btn {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 33px; height: 33px; border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--muted); cursor: pointer;
+    transition: color .15s ease, border-color .15s ease, background .15s ease;
+  }
+  .icon-btn:hover { color: var(--primary); border-color: var(--border-strong); }
+  .icon-btn svg { width: 15px; height: 15px; }
+
+  /* ---------- headline ---------- */
+  .headline { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 24px; }
+  .stat {
+    position: relative; overflow: hidden;
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 26px 16px; box-shadow: var(--shadow-sm);
+  }
+  .stat .top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+  .stat .label { font-size: 13.5px; font-weight: 500; color: var(--muted); }
+  .stat .num {
+    font-size: 36px; font-weight: 700; letter-spacing: -.03em; line-height: 1.05;
+    margin: 10px 0 12px; font-variant-numeric: tabular-nums;
+  }
+  .stat .meta { display: flex; align-items: center; gap: 10px; font-size: 12.5px; color: var(--faint); padding-right: 164px; }
+  .delta {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-family: var(--mono); font-size: 12px; font-weight: 600;
+    padding: 3px 9px; border-radius: 999px; white-space: nowrap;
+  }
+  .delta.up { color: var(--good); background: var(--good-soft); }
+  .delta.down { color: var(--bad); background: var(--bad-soft); }
+  .delta.flat { color: var(--faint); background: var(--surface-2); }
+  .spark { position: absolute; right: 22px; bottom: 12px; width: 140px; height: 44px; }
+  .spark canvas { width: 100% !important; height: 100% !important; }
+  .stat .note { font-size: 12.5px; color: var(--faint); margin-top: 10px; }
+
+  /* ---------- metrics strip ---------- */
+  .metrics {
+    display: grid; grid-template-columns: repeat(8, 1fr);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    margin-bottom: 26px; overflow: hidden; box-shadow: var(--shadow-sm);
+  }
+  .metric { padding: 16px 18px 15px; min-width: 0; }
+  .metric + .metric { border-left: 1px solid var(--border); }
+  .metric .val {
+    display: block; font-size: 22px; font-weight: 700; letter-spacing: -.02em;
+    font-variant-numeric: tabular-nums; line-height: 1.1;
+  }
+  .metric .lbl {
+    display: block; margin-top: 6px; font-size: 12px; font-weight: 500; color: var(--faint);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+
+  /* ---------- charts ---------- */
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 16px;
+    padding: 22px 24px 18px; box-shadow: var(--shadow-sm); min-width: 0;
+  }
+  .card.wide { grid-column: 1 / -1; }
+  .card.feat {
+    background: linear-gradient(180deg, var(--feat-tint), var(--surface) 45%);
+  }
+  .card .head { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .card h2 { font-size: 15px; font-weight: 600; letter-spacing: -.01em; }
+  .card h2 .tag { font-size: 12.5px; font-weight: 500; color: var(--faint); white-space: nowrap; }
+  .holder { position: relative; height: 250px; margin-top: 16px; }
+  .card.wide .holder { height: 300px; }
+  .empty {
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+    color: var(--faint); text-align: center; height: 100%; font-size: 12.5px;
+  }
+
+  /* ---------- heatmap ---------- */
+  .hm-wrap { overflow-x: auto; padding-bottom: 4px; margin-top: 16px; }
+  .hm { display: flex; gap: 4px; width: max-content; }
+  .hm .wdays { display: grid; grid-template-rows: repeat(7, 14px); gap: 3px; margin-right: 8px; }
+  .hm .wdays span { font-family: var(--mono); font-size: 9.5px; font-weight: 500; color: var(--faint); line-height: 14px; }
+  .hm .weeks { display: flex; gap: 4px; }
+  .hm .week { display: grid; grid-template-rows: 18px repeat(7, 14px); gap: 3px; }
+  .hm .month { font-family: var(--mono); font-size: 9.5px; font-weight: 500; color: var(--faint); line-height: 18px; white-space: nowrap; padding-right: 6px; }
+  .hm .day { width: 14px; height: 14px; border-radius: 4px; background: var(--surface-2); border: 1px solid var(--border); transition: transform .1s ease; }
+  .hm .day:hover { transform: scale(1.22); }
+  .hm .day.d1 { background: rgb(var(--primary-rgb) / .2); border-color: transparent; }
+  .hm .day.d2 { background: rgb(var(--primary-rgb) / .4); border-color: transparent; }
+  .hm .day.d3 { background: rgb(var(--primary-rgb) / .65); border-color: transparent; }
+  .hm .day.d4 { background: rgb(var(--primary-rgb) / .92); border-color: transparent; }
+  .hm-legend { display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10px; font-weight: 500; color: var(--faint); margin-top: 12px; }
+  .hm-legend .cells { display: inline-flex; gap: 3px; }
+  .hm-legend .cells i { width: 11px; height: 11px; border-radius: 3.5px; display: inline-block; }
+
+  /* ---------- footer ---------- */
+  footer { margin-top: 32px; border-top: 1px solid var(--border); padding-top: 20px; font-size: 13px; color: var(--muted); line-height: 1.8; }
+  footer code { font-family: var(--mono); background: var(--surface-2); border: 1px solid var(--border); padding: 0 5px; border-radius: 5px; font-size: 11.5px; }
+  footer .row { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+  footer a { color: var(--primary); text-decoration: none; }
+  footer a:hover { text-decoration: underline; }
+
+  @media (max-width: 1080px) {
+    .metrics { grid-template-columns: repeat(4, 1fr); }
+    .metric:nth-child(4n + 1) { border-left: 0; }
+    .metric:nth-child(n + 5) { border-top: 1px solid var(--border); }
+  }
+  @media (max-width: 820px) {
+    .headline { grid-template-columns: 1fr; }
+    .grid { grid-template-columns: 1fr; }
+    .card.wide { grid-column: 1; }
+    .page-meta { align-items: flex-start; }
+    .metrics { grid-template-columns: repeat(4, 1fr); }
+    .metric:nth-child(4n + 1) { border-left: 0; }
+    .metric:nth-child(n + 5) { border-top: 1px solid var(--border); }
+  }
+  @media (max-width: 560px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .metric:nth-child(odd) { border-left: 0; }
+    .metric:nth-child(n + 3) { border-top: 1px solid var(--border); }
+    .spark { display: none; }
+    .page { padding: 28px 18px 48px; }
+    .mast-inner { padding: 0 18px; }
+    h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="mast">
+  <div class="mast-inner">
+    <a class="brand" href="https://nagusubra.github.io">
+      <svg viewBox="0 0 512 512" aria-hidden="true">
+        <rect width="512" height="512" rx="96" fill="#0B1120"/>
+        <rect x="118" y="268" width="68" height="132" rx="18" fill="#FFFFFF"/>
+        <rect x="222" y="188" width="68" height="212" rx="18" fill="#FFFFFF"/>
+        <rect x="326" y="108" width="68" height="292" rx="18" fill="#FFFFFF"/>
+        <circle cx="368" cy="368" r="92" fill="#16A34A"/>
+        <path d="M318 370 L352 404 L424 318" fill="none" stroke="#FFFFFF" stroke-width="34" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span class="brand-name">nagusubra.github.io</span>
+    </a>
+    <nav class="mast-links">
+      <a href="https://nagusubra.github.io/traffic/">All dashboards</a>
+      <a href="https://nagusubra.github.io">Docs</a>
+      <a href="https://github.com/nagusubra/nagusubra.github.io">GitHub</a>
+    </nav>
+  </div>
+</header>
+
+<main class="page">
+
+  <div class="page-head">
+    <div>
+      <h1>Traffic &amp; growth</h1>
+      <p class="sub">Hourly snapshots of views, clones, community and code activity for
+        <a href="https://github.com/nagusubra/nagusubra.github.io">github/nagusubra/nagusubra.github.io</a>.</p>
+    </div>
+    <div class="page-meta">
+      <span class="asof">data through <b id="asOf">&hellip;</b></span>
+      <a href="https://raw.githubusercontent.com/nagusubra/traffic/main/doc/metric/nagusubra.github.io/badge.svg">
+        <img id="badgeImg" alt="total views" src="https://raw.githubusercontent.com/nagusubra/traffic/main/doc/metric/nagusubra.github.io/badge.svg">
+      </a>
+    </div>
+  </div>
+
+  <section class="controls">
+    <div class="seg" role="group" aria-label="Period">
+      <button data-preset="7">7d</button>
+      <button data-preset="30">30d</button>
+      <button data-preset="90">90d</button>
+      <button data-preset="all" class="on">All</button>
+    </div>
+    <div class="ctl-right">
+      <div class="dates">
+        <input type="date" id="from" aria-label="From">
+        <span class="sep">&rarr;</span>
+        <input type="date" id="to" aria-label="To">
+        <button class="icon-btn" id="reset" title="Reset to full range" aria-label="Reset to full range">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v5h5"/></svg>
+        </button>
+      </div>
+      <button class="icon-btn" id="themeBtn" title="Toggle theme" aria-label="Toggle theme">
+        <svg id="themeIco" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>
+      </button>
+    </div>
+  </section>
+
+  <section class="headline">
+    <div class="stat" id="statViews">
+      <div class="top">
+        <span class="label">All-time views</span>
+      </div>
+      <p class="num" id="totalViews">&hellip;</p>
+      <div class="meta">
+        <span class="delta" id="viewsDelta"></span>
+        <span>vs previous 7 days</span>
+      </div>
+      <div class="spark"><canvas id="sparkViews"></canvas></div>
+    </div>
+    <div class="stat" id="statVisitors">
+      <div class="top">
+        <span class="label">Unique visitors</span>
+      </div>
+      <p class="num" id="totalVisitors">&hellip;</p>
+      <div class="meta">
+        <span class="delta" id="visitorsDelta"></span>
+        <span>vs previous 7 days</span>
+      </div>
+      <div class="spark"><canvas id="sparkVisitors"></canvas></div>
+    </div>
+  </section>
+
+  <section class="metrics">
+    <div class="metric"><span class="val" id="sClones">&hellip;</span><span class="lbl">Clones</span></div>
+    <div class="metric"><span class="val" id="sCloners">&hellip;</span><span class="lbl">Unique cloners</span></div>
+    <div class="metric"><span class="val" id="sStars">&hellip;</span><span class="lbl">Stars</span></div>
+    <div class="metric"><span class="val" id="sForks">&hellip;</span><span class="lbl">Forks</span></div>
+    <div class="metric"><span class="val" id="sWatchers">&hellip;</span><span class="lbl">Watchers</span></div>
+    <div class="metric"><span class="val" id="sIssues">&hellip;</span><span class="lbl">Open issues</span></div>
+    <div class="metric"><span class="val" id="sContributors">&hellip;</span><span class="lbl">Contributors</span></div>
+    <div class="metric"><span class="val" id="sReleases">&hellip;</span><span class="lbl">Releases</span></div>
+  </section>
+
+  <section class="grid">
+    <div class="card">
+      <div class="head"><h2>Views per day</h2><span class="tag">total &amp; unique</span></div>
+      <div class="holder"><canvas id="viewsChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Clones per day</h2><span class="tag">total &amp; unique</span></div>
+      <div class="holder"><canvas id="clonesChart"></canvas></div>
+    </div>
+    <div class="card wide feat">
+      <div class="head"><h2>Cumulative views</h2><span class="tag">all-time growth</span></div>
+      <div class="holder"><canvas id="cumViewsChart"></canvas></div>
+    </div>
+    <div class="card wide">
+      <div class="head"><h2>Stars &amp; forks</h2><span class="tag">since 2026-08-16</span></div>
+      <div class="holder"><canvas id="repoChart"></canvas></div>
+    </div>
+    <div class="card wide">
+      <div class="head"><h2>Issues &amp; pull requests</h2><span class="tag">opened / closed / merged</span></div>
+      <div class="holder"><canvas id="issuesChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Weekly commits</h2><span class="tag">from GitHub stats</span></div>
+      <div class="holder"><canvas id="commitsChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Traffic by weekday</h2><span class="tag">average views</span></div>
+      <div class="holder"><canvas id="weekdayChart"></canvas></div>
+    </div>
+    <div class="card wide">
+      <div class="head"><h2>Daily activity</h2><span class="tag">views heatmap</span></div>
+      <div class="hm-wrap"><div class="hm" id="heatmap"></div></div>
+      <div class="hm-legend">less <span class="cells"><i style="background:var(--surface-2);border:1px solid var(--border)"></i><i style="background:rgb(var(--primary-rgb)/.2)"></i><i style="background:rgb(var(--primary-rgb)/.4)"></i><i style="background:rgb(var(--primary-rgb)/.65)"></i><i style="background:rgb(var(--primary-rgb)/.92)"></i></span> more</div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Top referrers</h2><span class="tag">selected period</span></div>
+      <div class="holder"><canvas id="referrersChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="head"><h2>Top paths</h2><span class="tag">selected period</span></div>
+      <div class="holder"><canvas id="pathsChart"></canvas></div>
+    </div>
+  </section>
+
+  <footer>
+    <div class="row">
+      <div>
+        <p>Headline figures are <strong>all-time</strong>; charts and top tables follow the selected period.
+        GitHub only exposes 14 days of traffic, so views/clones exist since <code id="startDate">&hellip;</code> and are
+        archived hourly into <a href="https://github.com/nagusubra/traffic">nagusubra/traffic</a>.</p>
+        <p>&ldquo;Unique&rdquo; counts sum GitHub&rsquo;s <em>daily</em> uniques. One person returning on three days
+        counts as three. <a href="https://github.com/nagusubra/traffic/tree/main/.metrics/data/nagusubra.github.io">Browse the raw data &rarr;</a></p>
+      </div>
+      <div>
+        <p><a href="https://nagusubra.github.io">nagusubra.github.io</a> &middot;
+        <a href="https://github.com/nagusubra/nagusubra.github.io">GitHub</a></p>
+      </div>
+    </div>
+  </footer>
+
+</main>
+
+<script>
+(() => {
+  const REPO = "nagusubra/nagusubra.github.io";
+  const SLUG = "nagusubra.github.io";
+  const DATA_REPO = "nagusubra/traffic";
+  const DATA_BRANCH = "main";
+  const BASE = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/.metrics/data/${SLUG}/`;
+  const BADGE = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/doc/metric/${SLUG}/badge.svg`;
+  const UI = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif";
+  const MONO = "'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+  const chart = window.Chart;
+  const $ = id => document.getElementById(id);
+  const fmt = n => (n == null ? "\u2026" : Number(n).toLocaleString("en-US"));
+
+  const cssVar = name => getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+  const rgba = (hex, a) => {
+    const n = parseInt(hex.slice(1), 16);
+    return `rgba(${(n >> 16) & 255},${(n >> 8) & 255},${n & 255},${a})`;
+  };
+  const C = {
+    primary: () => cssVar("--primary"),
+    good: () => cssVar("--good"),
+    sus: () => cssVar("--sus"),
+    bad: () => cssVar("--bad"),
+    muted: () => cssVar("--muted"),
+    faint: () => cssVar("--faint"),
+    text: () => cssVar("--text"),
+    grid: () => cssVar("--grid"),
+    tipBg: () => cssVar("--tip-bg"),
+    tipFg: () => cssVar("--tip-fg"),
+    primaryRgb: () => cssVar("--primary-rgb"),
+  };
+
+  const charts = {};
+  let all = { views: [], clones: [], referrers: [], paths: [], repo: [], stars: [], forks: [], commits: [], issues: [] };
+
+  // ---- data loading -------------------------------------------------------
+  async function fetchCSV(name) {
+    try {
+      const res = await fetch(BASE + name + ".csv");
+      if (!res.ok) return [];
+      const text = await res.text();
+      const lines = text.trim().split(/\r?\n/).filter(Boolean);
+      if (lines.length < 2) return [];
+      const header = lines[0].split(",").map(s => s.trim());
+      return lines.slice(1).map(l => {
+        const cells = l.split(",").map(s => s.trim());
+        const row = {};
+        header.forEach((h, i) => (row[h] = cells[i]));
+        return row;
+      });
+    } catch (e) { return []; }
+  }
+  const num = (r, k) => parseInt(r[k], 10) || 0;
+
+  // ---- helpers -------------------------------------------------------------
+  function inRange(d) {
+    const f = $("from").value, t = $("to").value;
+    return (!f || d >= f) && (!t || d <= t);
+  }
+  function sum(rows, col) { return rows.reduce((a, r) => a + num(r, col), 0); }
+  function last(rows, col) { return rows.length ? rows[rows.length - 1][col] : null; }
+  function cum(rows, col) {
+    let acc = 0;
+    return rows.map(r => (acc += num(r, col)));
+  }
+  function topBy(rows, keyCol, countCol, labelFn, limit) {
+    const agg = {};
+    for (const r of rows) {
+      const k = (r[keyCol] || "").trim();
+      if (!k) continue;
+      if (!agg[k]) agg[k] = { label: labelFn ? labelFn(k, r) : k, count: 0 };
+      agg[k].count += num(r, countCol);
+    }
+    return Object.values(agg).sort((a, b) => b.count - a.count).slice(0, limit || 10);
+  }
+  const isoS = d => d.toISOString().slice(0, 10);
+  function daysAgo(n) { const d = new Date(); d.setUTCDate(d.getUTCDate() - n); return isoS(d); }
+  function pct(a, b) {
+    if (!b) return null;
+    return Math.round(((a - b) / b) * 100);
+  }
+
+  // ---- count-up for headline numbers ----------------------------------------
+  function animateNumber(id, value) {
+    const el = $(id);
+    if (!el) return;
+    const target = Number(value) || 0;
+    const dur = 750, t0 = performance.now();
+    const tick = t => {
+      const p = Math.min(1, (t - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = fmt(Math.round(target * eased));
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  // ---- chart styling -------------------------------------------------------
+  function baseOpts(extra) {
+    return Object.assign({
+      responsive: true, maintainAspectRatio: false,
+      animation: { duration: 450, easing: "easeOutQuart" },
+      interaction: { mode: "index", intersect: false },
+      plugins: {
+        legend: {
+          position: "top", align: "end",
+          labels: { boxWidth: 16, boxHeight: 2, color: C.muted(), padding: 12, font: { family: UI, size: 11 }, usePointStyle: false }
+        },
+        tooltip: {
+          backgroundColor: C.tipBg(), titleColor: C.tipFg(), bodyColor: C.tipFg(),
+          titleFont: { family: MONO, size: 11, weight: "600" }, bodyFont: { family: MONO, size: 11 },
+          padding: { x: 12, y: 9 }, boxPadding: 5, cornerRadius: 8,
+          callbacks: { title: items => (items[0] ? items[0].label : "") }
+        }
+      },
+      scales: {
+        x: { ticks: { color: C.faint(), maxTicksLimit: 8, font: { family: MONO, size: 10.5 }, maxRotation: 0, autoSkip: true }, grid: { display: false }, border: { display: false } },
+        y: { beginAtZero: true, ticks: { color: C.faint(), precision: 0, maxTicksLimit: 5, font: { family: MONO, size: 10.5 } }, grid: { color: C.grid(), borderDash: [3, 3] }, border: { display: false } }
+      }
+    }, extra || {});
+  }
+
+  function fill(hex) {
+    return ctx => {
+      const a = ctx.chart.chartArea;
+      if (!a) return "rgba(0,0,0,0)";
+      return hex;
+    };
+  }
+
+  function lineDataset(label, data, color, opts) {
+    return Object.assign({
+      label, data,
+      borderColor: color, borderWidth: 2, tension: .35,
+      pointRadius: 0, pointHoverRadius: 4.5, pointHoverBackgroundColor: color, pointHitRadius: 14
+    }, opts || {});
+  }
+
+  function makeChart(key, kind, holder, labels, datasets, opts) {
+    if (charts[key]) { charts[key].destroy(); charts[key] = null; }
+    holder.querySelector(".empty")?.remove();
+    if (!labels.length) { renderEmpty(holder); return; }
+    charts[key] = new chart(holder.querySelector("canvas").getContext("2d"), {
+      type: kind, data: { labels, datasets }, options: opts
+    });
+  }
+
+  function makeLine(key, rows, datasets) {
+    const holder = $(key).parentElement;
+    makeChart(key, "line", holder, rows.map(r => r.date), datasets, baseOpts());
+  }
+
+  function makeBars(key, labels, values, color, opts) {
+    const holder = $(key).parentElement;
+    const base = baseOpts();
+    makeChart(key, "bar", holder, labels, [{
+      data: values, backgroundColor: color, borderRadius: { topLeft: 5, topRight: 5 }, barThickness: 12, maxBarThickness: 18
+    }], Object.assign(base, { plugins: { legend: { display: false } }, scales: { x: base.scales.x, y: base.scales.y } }, opts || {}));
+  }
+
+  function makeHBar(key, rows, color) {
+    const holder = $(key).parentElement;
+    const base = baseOpts();
+    makeChart(key, "bar", holder, rows.map(r => r.label), [{
+      data: rows.map(r => r.count), backgroundColor: color, borderRadius: { topRight: 6, bottomRight: 6 }, barThickness: 13
+    }], Object.assign(base, {
+      indexAxis: "y",
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { beginAtZero: true, ticks: { color: C.faint(), precision: 0, maxTicksLimit: 5, font: { family: MONO, size: 10.5 } }, grid: { color: C.grid(), borderDash: [3, 3] }, border: { display: false } },
+        y: { ticks: { color: C.muted(), font: { family: MONO, size: 10.5 }, callback: v => String(v).length > 42 ? String(v).slice(0, 41) + "\u2026" : v }, grid: { display: false }, border: { display: false } }
+      }
+    }));
+  }
+
+  function renderEmpty(holder, msg) {
+    const div = document.createElement("div");
+    div.className = "empty";
+    div.appendChild(document.createTextNode(msg || "No data in the selected period."));
+    holder.appendChild(div);
+  }
+
+  function makeSpark(canvas, values, color, fillColor) {
+    if (!chart) return;
+    const parent = canvas.parentElement;
+    parent.querySelector(".empty")?.remove();
+    const existing = chart.getChart && chart.getChart(canvas);
+    if (existing) existing.destroy();
+    const ctx = canvas.getContext("2d");
+    new chart(ctx, {
+      type: "line",
+      data: { labels: values.map((_, i) => i), datasets: [{
+        data: values, borderColor: color, borderWidth: 2, tension: .35,
+        pointRadius: 0, fill: true,
+        backgroundColor: fill(fillColor || "rgba(" + C.primaryRgb() + " / .08)")
+      }] },
+      options: {
+        responsive: true, maintainAspectRatio: false, animation: { duration: 450, easing: "easeOutQuart" },
+        plugins: { legend: { display: false }, tooltip: { enabled: false } },
+        scales: { x: { display: false }, y: { display: false } },
+        elements: { line: { borderJoinStyle: "round" } }
+      }
+    });
+  }
+
+  // ---- heatmap --------------------------------------------------------------
+  function renderHeatmap(rows) {
+    const el = $("heatmap");
+    const max = Math.max(1, ...rows.map(r => num(r, "views")));
+    const level = v => (v === 0 ? 0 : v / max >= .8 ? 4 : v / max >= .55 ? 3 : v / max >= .3 ? 2 : 1);
+    const byDate = {};
+    rows.forEach(r => (byDate[r.date] = num(r, "views")));
+
+    const start = $("from").value || (rows.length && rows[0].date);
+    const end = $("to").value || (rows.length && rows[rows.length - 1].date);
+    const days = [];
+    let d = new Date(start + "T00:00:00Z");
+    const e = new Date(end + "T00:00:00Z");
+    while (d <= e) { days.push(new Date(d)); d.setUTCDate(d.getUTCDate() + 1); }
+    if (!days.length) { el.innerHTML = ""; return; }
+
+    const WEEKDAYS = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+
+    let cur = days[0];
+    cur.setUTCDate(cur.getUTCDate() - ((cur.getUTCDay() + 6) % 7));
+    const weeks = [];
+    while (cur <= days[days.length - 1]) {
+      const cells = [];
+      for (let i = 0; i < 7; i++) {
+        const day = new Date(cur);
+        day.setUTCDate(cur.getUTCDate() + i);
+        cells.push(day);
+      }
+      weeks.push(cells);
+      cur.setUTCDate(cur.getUTCDate() + 7);
+    }
+
+    let prevMonth = -1;
+    const html = weeks.map(week => {
+      const m = week[0].getUTCMonth();
+      const label = m !== prevMonth ? MONTHS[m] + (m === 0 ? " '" + String(week[0].getUTCFullYear()).slice(2) : "") : "";
+      prevMonth = m;
+      const cellsHtml = week.map(day => {
+        const iso = isoS(day);
+        if (iso < start || iso > end) return '<span class="day d0" style="border-color:transparent;background:transparent"></span>';
+        const v = byDate[iso] || 0;
+        return `<span class="day d${level(v)}" title="${iso} &middot; ${v} view${v === 1 ? "" : "s"}"></span>`;
+      }).join("");
+      return `<div class="week"><span class="month">${label}</span>${cellsHtml}</div>`;
+    }).join("");
+
+    const wd = WEEKDAYS.map(d => `<span>${d}</span>`).join("");
+    el.innerHTML = `<div class="wdays">${wd}</div><div class="weeks">${html}</div>`;
+  }
+
+  // ---- render -----------------------------------------------------------------
+  function render() {
+    const v = all.views.filter(r => inRange(r.date));
+    const c = all.clones.filter(r => inRange(r.date));
+    const st = all.stars.filter(r => inRange(r.date));
+    const fk = all.forks.filter(r => inRange(r.date));
+    const iss = all.issues.filter(r => inRange(r.date));
+    const cm = all.commits.filter(r => inRange(r.week_start));
+    const refs = all.referrers.filter(r => inRange(r.date));
+    const paths = all.paths.filter(r => inRange(r.date));
+
+    const starsData = st.length ? st : all.repo.map(r => ({ date: r.date, stars: r.stars }));
+    const forksData = fk.length ? fk : all.repo.map(r => ({ date: r.date, forks: r.forks }));
+
+    makeLine("viewsChart", v, [
+      lineDataset("Views", v.map(r => num(r, "views")), C.primary(), { backgroundColor: fill(rgba(C.primary(), .09)), fill: true }),
+      lineDataset("Unique", v.map(r => num(r, "uniques")), C.muted(), { borderDash: [5, 4] })
+    ]);
+    makeLine("clonesChart", c, [
+      lineDataset("Clones", c.map(r => num(r, "clones")), C.good(), { backgroundColor: fill(rgba(C.good(), .07)), fill: true }),
+      lineDataset("Unique", c.map(r => num(r, "uniques")), C.muted(), { borderDash: [5, 4] })
+    ]);
+    makeLine("cumViewsChart", v, [
+      lineDataset("Views", cum(v, "views"), C.primary(), { backgroundColor: fill(rgba(C.primary(), .09)), fill: true })
+    ]);
+    makeLine("repoChart", starsData.length > forksData.length ? starsData : forksData, [
+      lineDataset("Stars", starsData.map(r => num(r, "stars")), C.sus()),
+      lineDataset("Forks", forksData.map(r => num(r, "forks")), C.primary())
+    ]);
+    makeLine("issuesChart", iss, [
+      lineDataset("Opened", iss.map(r => num(r, "issues_opened") + num(r, "prs_opened")), C.primary()),
+      lineDataset("Closed", iss.map(r => num(r, "issues_closed") + num(r, "prs_closed")), C.muted()),
+      lineDataset("Merged", iss.map(r => num(r, "prs_merged")), C.good())
+    ]);
+    makeBars("commitsChart", cm.map(r => r.week_start.slice(5)), cm.map(r => num(r, "total")), C.primary());
+
+    const wdCounts = [0, 0, 0, 0, 0, 0, 0], wdDays = [0, 0, 0, 0, 0, 0, 0];
+    for (const r of v) {
+      const idx = (new Date(r.date + "T00:00:00Z").getUTCDay() + 6) % 7;
+      wdCounts[idx] += num(r, "views"); wdDays[idx] += 1;
+    }
+    makeBars("weekdayChart",
+      ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+      wdCounts.map((n, i) => (wdDays[i] ? Math.round(n / wdDays[i]) : 0)),
+      C.primary());
+
+    renderHeatmap(v);
+    makeHBar("referrersChart", topBy(refs, "referrer", "count"), C.primary());
+    makeHBar("pathsChart", topBy(paths, "path", "count", (k, r) => r.title || k), C.good());
+
+    // sparks + deltas on headline
+    const vAll = all.views;
+    const last7 = vAll.slice(-7);
+    const prev7 = vAll.slice(-14, -7);
+    drawDelta("viewsDelta", sum(last7, "views"), sum(prev7, "views"));
+    drawDelta("visitorsDelta", sum(last7, "uniques"), sum(prev7, "uniques"));
+    makeSpark($("sparkViews"), last7.map(r => num(r, "views")), C.primary(), rgba(C.primary(), .08));
+    makeSpark($("sparkVisitors"), last7.map(r => num(r, "uniques")), C.good(), rgba(C.good(), .07));
+  }
+
+  function drawDelta(id, cur, prev) {
+    const el = $(id);
+    const d = pct(cur, prev);
+    if (d == null) { el.textContent = "n/a"; el.className = "delta flat"; return; }
+    const cls = d > 0 ? "up" : d < 0 ? "down" : "flat";
+    const arrow = d > 0 ? "\u2191" : d < 0 ? "\u2193" : "";
+    el.textContent = `${arrow} ${Math.abs(d)}%`;
+    el.className = "delta " + cls;
+  }
+
+  // ---- init ---------------------------------------------------------------------
+  function themeFromStorage() {
+    try { return localStorage.getItem("githubio-theme") || null; } catch (e) { return null; }
+  }
+  function applyTheme(theme) {
+    const t = theme || (matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+    document.documentElement.setAttribute("data-theme", t);
+    $("themeIco").innerHTML = t === "dark"
+      ? '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>'
+      : '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>';
+    try { if (theme) localStorage.setItem("githubio-theme", theme); else localStorage.removeItem("githubio-theme"); } catch (e) {}
+    render();
+  }
+
+  function setStats() {
+    animateNumber("totalViews", sum(all.views, "views"));
+    animateNumber("totalVisitors", sum(all.views, "uniques"));
+    animateNumber("sClones", sum(all.clones, "clones"));
+    animateNumber("sCloners", sum(all.clones, "uniques"));
+    const repo = all.repo;
+    animateNumber("sStars", last(repo, "stars"));
+    animateNumber("sForks", last(repo, "forks"));
+    animateNumber("sWatchers", last(repo, "subscribers"));
+    animateNumber("sIssues", last(repo, "open_issues"));
+    animateNumber("sContributors", last(repo, "contributors"));
+    animateNumber("sReleases", last(repo, "releases"));
+  }
+
+  function setRange() {
+    const dates = [...all.views, ...all.clones].map(r => r.date).filter(Boolean).sort();
+    if (!dates.length) return;
+    $("from").value = dates[0];
+    $("to").value = dates[dates.length - 1];
+    $("startDate").textContent = dates[0];
+    $("asOf").textContent = dates[dates.length - 1];
+    $("badgeImg").src = BADGE + "?v=" + encodeURIComponent(dates[dates.length - 1]);
+  }
+
+  async function init() {
+    const [views, clones, referrers, paths, repo, stars, forks, commits, issues] = await Promise.all([
+      fetchCSV("views"), fetchCSV("clones"), fetchCSV("referrers"), fetchCSV("paths"),
+      fetchCSV("repo"), fetchCSV("stars"), fetchCSV("forks"), fetchCSV("commits"), fetchCSV("issues")
+    ]);
+    all = { views, clones, referrers, paths, repo, stars, forks, commits, issues };
+    setStats();
+    setRange();
+    const stored = themeFromStorage();
+    if (stored) applyTheme(stored); else applyTheme(null);
+  }
+
+  // controls
+  const segButtons = document.querySelectorAll(".seg button");
+  segButtons.forEach(btn => {
+    btn.addEventListener("click", () => {
+      const n = parseInt(btn.dataset.preset, 10);
+      const isAll = btn.dataset.preset === "all";
+      $("to").value = daysAgo(0);
+      $("from").value = isAll ? "" : daysAgo(n - 1);
+      segButtons.forEach(b => b.classList.remove("on"));
+      btn.classList.add("on");
+      render();
+    });
+  });
+  $("reset").addEventListener("click", () => {
+    const dates = [...all.views, ...all.clones].map(r => r.date).filter(Boolean).sort();
+    if (dates.length) { $("from").value = dates[0]; $("to").value = dates[dates.length - 1]; render(); }
+  });
+  ["from", "to"].forEach(id => $(id).addEventListener("change", render));
+  $("themeBtn").addEventListener("click", () => {
+    const next = document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark";
+    applyTheme(next);
+  });
+
+  init().catch(e => console.error(e));
+})();
+</script>
+</body>
+</html>

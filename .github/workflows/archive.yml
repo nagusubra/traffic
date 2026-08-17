@@ -29,7 +29,7 @@ jobs:
           set -e
           # Add new source repos here; data lands in .metrics/data/<repo>/ and
           # doc/metric/<repo>/ automatically.
-          for repo in nagusubra/timeseries-qc nagusubra/industry-hackathon-lab; do
+          for repo in nagusubra/timeseries-qc nagusubra/industry-hackathon-lab nagusubra/duvals_triangle_plotter nagusubra/AI-customer-counter nagusubra/nagusubra.github.io; do
             echo "::group::archiving $repo"
             GITHUB_REPOSITORY=$repo python3 .github/scripts/archive_traffic.py
             echo "::endgroup::"

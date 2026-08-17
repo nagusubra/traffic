@@ -13,6 +13,9 @@ dashboards and raw data.
 |------|-----------|
 | timeseries-qc | https://nagusubra.github.io/traffic/doc/metric/timeseries-qc/ |
 | industry-hackathon-lab | https://nagusubra.github.io/traffic/doc/metric/industry-hackathon-lab/ |
+| duvals_triangle_plotter | https://nagusubra.github.io/traffic/doc/metric/duvals_triangle_plotter/ |
+| AI-customer-counter | https://nagusubra.github.io/traffic/doc/metric/AI-customer-counter/ |
+| nagusubra.github.io | https://nagusubra.github.io/traffic/doc/metric/nagusubra.github.io/ |
 
 Add a new repo by:
 
