@@ -4,6 +4,9 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex">
+<meta http-equiv="cache-control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="pragma" content="no-cache">
+<meta http-equiv="expires" content="0">
 <title>industry-hackathon-lab · repo analytics</title>
 <link rel="icon" href="/favicon.ico?v=2" sizes="any">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
@@ -427,10 +430,10 @@
   const REPO = "nagusubra/industry-hackathon-lab";
   const SLUG = "industry-hackathon-lab";
   const DATA_REPO = "nagusubra/traffic";
-  const DATA_BRANCH = "main";
-  // Use GitHub Pages (no CDN cache) instead of raw.githubusercontent.com (5min-24h cache)
-  const BASE = `https://${DATA_REPO}.github.io/${DATA_REPO.split("/")[1]}/.metrics/data/${SLUG}/`;
-  const BADGE = `https://${DATA_REPO}.github.io/${DATA_REPO.split("/")[1]}/doc/metric/${SLUG}/badge.svg`;
+  const [GH_OWNER, GH_REPO] = DATA_REPO.split("/");
+  // GitHub Pages (no CDN cache) instead of raw.githubusercontent.com (5min-24h cache)
+  const BASE = `https://${GH_OWNER}.github.io/${GH_REPO}/.metrics/data/${SLUG}/`;
+  const BADGE = `https://${GH_OWNER}.github.io/${GH_REPO}/doc/metric/${SLUG}/badge.svg`;
   const UI = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif";
   const MONO = "'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
@@ -463,7 +466,7 @@
   // ---- data loading -------------------------------------------------------
   async function fetchCSV(name) {
     try {
-      const res = await fetch(BASE + name + ".csv");
+      const res = await fetch(BASE + name + ".csv?t=" + Date.now());
       if (!res.ok) return [];
       const text = await res.text();
       const lines = text.trim().split(/\r?\n/).filter(Boolean);

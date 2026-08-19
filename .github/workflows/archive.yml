@@ -26,8 +26,11 @@ jobs:
 
       - name: Archive traffic
         env:
-          # Fine-grained PAT (secret GH_TRAFFIC_TOKEN) with traffic read access
-          # to each source repo below. Push below uses GITHUB_TOKEN.
+          # GH_TRAFFIC_TOKEN must be a PAT that can READ traffic stats for every
+          # source repo below. Classic PAT: `repo` scope. Fine-grained PAT:
+          # `Administration: Read` (metadata) per repo. A token missing these
+          # gets HTTP 403 and the script exits non-zero so this job FAILS loudly
+          # instead of silently archiving stale data.
           GH_TOKEN: ${{ secrets.GH_TRAFFIC_TOKEN }}
         run: |
           set -e

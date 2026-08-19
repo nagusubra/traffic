@@ -146,25 +146,31 @@ def cumulative_series(created: str, event_days: list[str]) -> list[dict]:
     return series
 
 
-def archive_views() -> str:
-    """Merge the 14-day views window; return the as-of date (latest day)."""
-    data = api_get(f"/repos/{REPO}/traffic/views?per=day") or {}
+def archive_views() -> tuple[str, bool]:
+    """Merge the 14-day views window; return (as-of date, fetch succeeded)."""
+    data = api_get(f"/repos/{REPO}/traffic/views?per=day")
+    ok = isinstance(data, dict) and isinstance(data.get("views"), list)
+    data = data or {}
     rows = [
         {"date": d["timestamp"][:10], "views": d["count"], "uniques": d["uniques"]}
         for d in data.get("views", [])
     ]
     merge_into(os.path.join(DATA_DIR, "views.csv"), VIEWS_FIELDS, ["date"], rows)
     dates = [d["timestamp"][:10] for d in data.get("views", [])]
-    return max(dates) if dates else today_utc()
+    return (max(dates) if dates else today_utc()), ok
 
 
-def archive_clones() -> None:
-    data = api_get(f"/repos/{REPO}/traffic/clones?per=day") or {}
+def archive_clones() -> bool:
+    """Merge the 14-day clones window; return True if the fetch succeeded."""
+    data = api_get(f"/repos/{REPO}/traffic/clones?per=day")
+    ok = isinstance(data, dict) and isinstance(data.get("clones"), list)
+    data = data or {}
     rows = [
         {"date": d["timestamp"][:10], "clones": d["count"], "uniques": d["uniques"]}
         for d in data.get("clones", [])
     ]
     merge_into(os.path.join(DATA_DIR, "clones.csv"), CLONES_FIELDS, ["date"], rows)
+    return ok
 
 
 def archive_referrers(asof: str) -> None:
@@ -334,14 +340,21 @@ def main() -> int:
     if not os.environ.get("CI"):
         log(f"local run | repo={REPO} | token={'present' if TOKEN else 'MISSING (traffic endpoints will be skipped)'}")
     log(f"archiving traffic for {REPO} -> slug {SLUG}")
-    asof = archive_views()
-    archive_clones()
+    asof, views_ok = archive_views()
+    clones_ok = archive_clones()
     archive_referrers(asof)
     archive_paths(asof)
     archive_repo()
     archive_commits()
     archive_issues()
     refresh_badge()
+
+    failed = [name for name, ok in (("views", views_ok), ("clones", clones_ok)) if not ok]
+    if failed:
+        log(f"[error] {REPO}: traffic API returned an error for {', '.join(failed)}. "
+            "Check that GH_TRAFFIC_TOKEN is a valid PAT with repo scope (classic) or "
+            "Administration:Read (fine-grained) on the source repo.")
+        return 1
     log("done")
     return 0
 
