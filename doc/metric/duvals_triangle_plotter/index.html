@@ -42,6 +42,7 @@
     --tip-bg: #0f172a;
     --tip-fg: #f8fafc;
     --ring: 0 0 0 3px rgba(15, 23, 42, .14);
+    --uniq: #0e7490;
     --feat-tint: rgba(15, 23, 42, .03);
     --bg-glow: radial-gradient(900px 340px at 50% -40px, rgba(15, 23, 42, .05), transparent 70%);
   }
@@ -67,6 +68,7 @@
     --tip-bg: #e7eef7;
     --tip-fg: #0f1728;
     --ring: 0 0 0 3px rgba(226, 232, 240, .16);
+    --uniq: #22d3ee;
     --feat-tint: rgba(226, 232, 240, .05);
     --bg-glow: radial-gradient(900px 340px at 50% -40px, rgba(226, 232, 240, .05), transparent 70%);
   }
@@ -256,12 +258,28 @@
     .metric:nth-child(n + 5) { border-top: 1px solid var(--border); }
   }
   @media (max-width: 560px) {
+    body { overflow-x: hidden; }
+    .mast-inner {
+      height: auto; min-height: 58px; flex-wrap: wrap; row-gap: 6px;
+      padding: 8px 14px;
+    }
+    .brand-name { max-width: 44vw; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mast-links { gap: 0; }
+    .mast-links a { font-size: 12px; padding: 6px 9px; }
+    .controls { padding: 8px; gap: 12px; }
+    .seg button { padding: 6px 11px; font-size: 12px; }
+    .icon-btn { width: 38px; height: 38px; }
+    input[type="date"] { font-size: 11px; padding: 5px 6px; }
+    .metric { padding: 12px 12px 11px; }
+    .metric .val { font-size: 19px; }
+    .holder { height: 220px; }
+    .card.wide .holder { height: 240px; }
+    .stat .num { font-size: 30px; }
     .metrics { grid-template-columns: repeat(2, 1fr); }
     .metric:nth-child(odd) { border-left: 0; }
     .metric:nth-child(n + 3) { border-top: 1px solid var(--border); }
     .spark { display: none; }
     .page { padding: 28px 18px 48px; }
-    .mast-inner { padding: 0 18px; }
     h1 { font-size: 22px; }
   }
 </style>
@@ -448,6 +466,7 @@
   };
   const C = {
     primary: () => cssVar("--primary"),
+    uniq: () => cssVar("--uniq"),
     good: () => cssVar("--good"),
     sus: () => cssVar("--sus"),
     bad: () => cssVar("--bad"),
@@ -534,7 +553,7 @@
       plugins: {
         legend: {
           position: "top", align: "end",
-          labels: { boxWidth: 16, boxHeight: 2, color: C.muted(), padding: 12, font: { family: UI, size: 11 }, usePointStyle: false }
+          labels: { boxWidth: 14, boxHeight: 6, color: C.muted(), padding: 12, font: { family: UI, size: 11 }, usePointStyle: true, pointStyle: "line" }
         },
         tooltip: {
           backgroundColor: C.tipBg(), titleColor: C.tipFg(), bodyColor: C.tipFg(),
@@ -700,11 +719,11 @@
 
     makeLine("viewsChart", v, [
       lineDataset("Views", v.map(r => num(r, "views")), C.primary(), { backgroundColor: fill(rgba(C.primary(), .09)), fill: true }),
-      lineDataset("Unique", v.map(r => num(r, "uniques")), C.muted(), { borderDash: [5, 4] })
+      lineDataset("Unique", v.map(r => num(r, "uniques")), C.uniq(), { borderDash: [5, 4] })
     ]);
     makeLine("clonesChart", c, [
       lineDataset("Clones", c.map(r => num(r, "clones")), C.good(), { backgroundColor: fill(rgba(C.good(), .07)), fill: true }),
-      lineDataset("Unique", c.map(r => num(r, "uniques")), C.muted(), { borderDash: [5, 4] })
+      lineDataset("Unique", c.map(r => num(r, "uniques")), C.uniq(), { borderDash: [5, 4] })
     ]);
     makeLine("cumViewsChart", v, [
       lineDataset("Views", cum(v, "views"), C.primary(), { backgroundColor: fill(rgba(C.primary(), .09)), fill: true })

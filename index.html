@@ -157,7 +157,6 @@
     margin-top: auto; padding-top: 16px; border-top: 1px solid var(--border);
   }
   .card-foot .go { font-size: 13.5px; font-weight: 600; color: var(--text); }
-  .card-foot img { height: 20px; display: block; }
 
   .links { display: flex; gap: 16px; font-size: 12.5px; }
   .links a { color: var(--muted); text-decoration: none; }
@@ -170,11 +169,15 @@
   footer a:hover { text-decoration: underline; }
 
   @media (max-width: 720px) {
-    .page { padding: 36px 18px 48px; }
-    .mast-inner { padding: 0 18px; }
+    body { overflow-x: hidden; }
+    .page { padding: 32px 18px 48px; }
+    .mast-inner { padding: 0 18px; gap: 10px; }
+    .mast-links a { font-size: 12.5px; padding: 7px 9px; }
     footer { padding: 0 18px 40px; }
-    h1 { font-size: 25px; }
+    h1 { font-size: 24px; }
     .cards { grid-template-columns: 1fr; }
+    .card { padding: 20px 18px 16px; }
+    .tabs { gap: 6px; }
   }
 </style>
 </head>
@@ -235,7 +238,6 @@
   // Use GitHub Pages (no CDN cache) instead of raw.githubusercontent.com (5min-24h cache)
   const RAW = "https://nagusubra.github.io/traffic/.metrics/data/";
   const REPO_BASE = "https://github.com/nagusubra";
-  const BADGE_BASE = "https://nagusubra.github.io/traffic/doc/metric";
   // Add future repos here: one object per dashboard. Files must exist at
   // doc/metric/<slug>/ and .metrics/data/<slug>/ (the archiver writes both).
   const DASHBOARDS = [
@@ -362,7 +364,6 @@
       </div>
       <div class="card-foot">
         <span class="go">Open dashboard &rarr;</span>
-        <img alt="total views" src="${BADGE_BASE}/${d.slug}/badge.svg?v=${Date.now()}">
       </div>
       <div class="links">
         <a href="${REPO_BASE}/${d.repo}">GitHub</a>
