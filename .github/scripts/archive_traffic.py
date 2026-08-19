@@ -5,8 +5,9 @@ doc/metric/*/badge.svg for the nagusubra/traffic dashboard repo.
 GitHub only exposes the last 14 days of traffic data, so this is meant to run
 on a schedule (see .github/workflows/archive.yml). Each run:
 
-  * fetches the full 14-day views/clones window and merges it into the
-    persistent CSVs (newer values win),
+  * appends new dates from the 14-day views/clones window into the persistent
+    CSVs (strictly append-only: existing rows are never overwritten, re-ordered,
+    or deleted, so no captured data can ever be lost),
   * snapshots the top referrers/paths dated with the traffic as-of date
     (the most recent day in the views window, so all datasets share one
     timeline and the dashboard's range filters apply uniformly),
@@ -106,18 +107,44 @@ def api_get_paged(path: str, per_page: int = 100, max_pages: int = 20, accept: s
     return out
 
 
+def _csv_last_byte_newline(path: str) -> bool:
+    """True if the file is empty or already ends with a newline character."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            if f.tell() == 0:
+                return True
+            f.seek(-1, os.SEEK_END)
+            return f.read(1) in (b"\n", b"\r")
+    except OSError:
+        return True
+
+
 def append_rows(path: str, fields: list[str], keys: list[str], new_rows: list[dict]) -> None:
     """Append new rows to a CSV without EVER modifying or deleting existing rows.
 
-    Guarantees:
-      * Existing rows (matched by ``keys``) are never touched.
-      * The file is opened in append mode, so it is never truncated or
-        re-written; only brand-new rows are appended at the end.
-      * If a row's key already exists, the new value is discarded -- the stored
-        value always wins, so no historical data can ever be overwritten or lost.
+    Hard guarantees:
+      * Existing rows are never overwritten, re-ordered, or deleted.
+      * The file is only ever opened in append ("a") mode -- it is never
+        truncated or re-written.
+      * If a row's key already exists, the incoming value is discarded; the
+        stored value always wins.
+      * A trailing partial line (e.g. from an interrupted previous write) is
+        preserved: a newline is emitted first so the appended rows stay
+        separate from the partial line.
+      * The append is flushed and fsync'd before returning.
+      * Afterwards the file is re-read and checked for duplicate keys, row
+        count, and header integrity. Any problem is logged as a warning; the
+        file is never "fixed", rewritten, or deleted by this code.
     """
+    if not new_rows:
+        log(f"{path} nothing to append")
+        return
+
     existing: set[tuple[str, ...]] = set()
     has_header = False
+    header_mismatch = False
+    pre_count = 0
     if os.path.exists(path) and os.path.getsize(path) > 0:
         with open(path, newline="", encoding="utf-8") as f:
             for i, row in enumerate(csv.reader(f)):
@@ -125,7 +152,9 @@ def append_rows(path: str, fields: list[str], keys: list[str], new_rows: list[di
                     continue
                 if i == 0:
                     has_header = True
+                    header_mismatch = [c.strip().lstrip("\ufeff") for c in row] != fields
                     continue
+                pre_count += 1
                 key = tuple(c.strip() for c in row[: len(keys)])
                 if all(k not in (None, "") for k in key):
                     existing.add(key)
@@ -140,16 +169,52 @@ def append_rows(path: str, fields: list[str], keys: list[str], new_rows: list[di
         to_add.append({k: str(row.get(k, "")) for k in fields})
 
     if not to_add:
-        log(f"{path} already current ({len(existing)} rows); nothing new to append")
+        msg = f"{path} already current ({pre_count} rows); nothing new to append"
+        if header_mismatch:
+            msg += " [warn: header does not match expected fields]"
+        log(msg)
         return
 
     os.makedirs(os.path.dirname(path), exist_ok=True)
+
+    needs_newline = os.path.exists(path) and os.path.getsize(path) > 0 and not _csv_last_byte_newline(path)
     with open(path, "a", newline="", encoding="utf-8") as f:
+        if needs_newline:
+            f.write("\r\n")
         writer = csv.DictWriter(f, fieldnames=fields)
         if not has_header:
             writer.writeheader()
         writer.writerows(to_add)
-    log(f"appended {len(to_add)} new row(s) to {path} ({len(existing) + len(to_add)} total rows)")
+        f.flush()
+        os.fsync(f.fileno())
+
+    # ---- integrity re-check (report only; never modify) ----
+    seen_check: set[tuple[str, ...]] = set()
+    dupes = 0
+    rows_after = 0
+    header_ok = True
+    with open(path, newline="", encoding="utf-8") as f:
+        for i, row in enumerate(csv.reader(f)):
+            if not row:
+                continue
+            if i == 0:
+                header_ok = [c.strip().lstrip("\ufeff") for c in row] == fields
+                continue
+            rows_after += 1
+            key = tuple(c.strip() for c in row[: len(keys)])
+            if all(k not in (None, "") for k in key):
+                if key in seen_check:
+                    dupes += 1
+                seen_check.add(key)
+
+    expected = pre_count + len(to_add)
+    log(f"appended {len(to_add)} new row(s) to {path} ({rows_after} data rows total)")
+    if dupes:
+        log(f"[warn] {path}: {dupes} duplicate key(s) detected after append -- file left untouched")
+    if rows_after != expected:
+        log(f"[warn] {path}: row count {rows_after} != expected {expected} after append")
+    if not header_ok:
+        log(f"[warn] {path}: header does not match expected fields {fields!r}")
 
 
 def read_all(path: str) -> list[dict]:
@@ -175,7 +240,7 @@ def cumulative_series(created: str, event_days: list[str]) -> list[dict]:
 
 
 def archive_views() -> tuple[str, bool]:
-    """Merge the 14-day views window; return (as-of date, fetch succeeded)."""
+    """Append new dates from the 14-day views window; return (as-of date, fetch succeeded)."""
     data = api_get(f"/repos/{REPO}/traffic/views?per=day")
     ok = isinstance(data, dict) and isinstance(data.get("views"), list)
     data = data or {}
@@ -189,7 +254,7 @@ def archive_views() -> tuple[str, bool]:
 
 
 def archive_clones() -> bool:
-    """Merge the 14-day clones window; return True if the fetch succeeded."""
+    """Append new dates from the 14-day clones window; return True if the fetch succeeded."""
     data = api_get(f"/repos/{REPO}/traffic/clones?per=day")
     ok = isinstance(data, dict) and isinstance(data.get("clones"), list)
     data = data or {}
@@ -364,6 +429,82 @@ def refresh_badge() -> None:
     render_badge("total views", format_int(total))
 
 
+CSV_SCHEMAS: dict[str, tuple[list[str], list[str]]] = {
+    "views.csv": (VIEWS_FIELDS, ["date"]),
+    "clones.csv": (CLONES_FIELDS, ["date"]),
+    "referrers.csv": (REFERRERS_FIELDS, ["date", "referrer"]),
+    "paths.csv": (PATHS_FIELDS, ["date", "path"]),
+    "repo.csv": (REPO_FIELDS, ["date"]),
+    "stars.csv": (STARS_FIELDS, ["date"]),
+    "forks.csv": (FORKS_FIELDS, ["date"]),
+    "commits.csv": (COMMITS_FIELDS, ["week_start"]),
+    "issues.csv": (ISSUES_FIELDS, ["date"]),
+}
+
+
+def validate_data_files() -> None:
+    """Audit every CSV under .metrics/data/<slug>/. Reports problems; never fixes.
+
+    Checks: file presence/size, header vs. expected schema, duplicate keys,
+    and rows whose key fields are empty. Nothing here modifies the files --
+    this is purely a read-only tripwire for data-retention regressions.
+    """
+    if not os.path.isdir(DATA_DIR):
+        log(f"[warn] no data directory yet: {DATA_DIR}")
+        return
+    problems = 0
+    for fname in sorted(os.listdir(DATA_DIR)):
+        if not fname.endswith(".csv"):
+            continue
+        path = os.path.join(DATA_DIR, fname)
+        schema = CSV_SCHEMAS.get(fname)
+        if schema is None:
+            log(f"[warn] {path}: unknown CSV (no schema) -- skipped")
+            problems += 1
+            continue
+        fields, keys = schema
+        if not os.path.getsize(path):
+            log(f"[warn] {path}: empty file")
+            problems += 1
+            continue
+        seen: set[tuple[str, ...]] = set()
+        dupes = 0
+        empty_key = 0
+        rows = 0
+        bad_header = False
+        with open(path, newline="", encoding="utf-8") as f:
+            for i, row in enumerate(csv.reader(f)):
+                if not row:
+                    continue
+                if i == 0:
+                    bad_header = [c.strip().lstrip("\ufeff") for c in row] != fields
+                    continue
+                rows += 1
+                key = tuple(c.strip() for c in row[: len(keys)])
+                if all(k not in (None, "") for k in key):
+                    if key in seen:
+                        dupes += 1
+                    seen.add(key)
+                else:
+                    empty_key += 1
+        issues = []
+        if bad_header:
+            issues.append("header mismatch")
+        if dupes:
+            issues.append(f"{dupes} duplicate key(s)")
+        if empty_key:
+            issues.append(f"{empty_key} empty-key row(s)")
+        if issues:
+            log(f"[warn] {path}: {rows} rows, {len(seen)} unique keys -- " + "; ".join(issues))
+            problems += len(issues)
+        else:
+            log(f"[ok] {path}: {rows} rows, {len(seen)} unique keys, header ok")
+    if problems:
+        log(f"[warn] data validation finished with {problems} issue(s); files were NOT modified")
+    else:
+        log("[ok] all data files validated")
+
+
 def main() -> int:
     if not os.environ.get("CI"):
         log(f"local run | repo={REPO} | token={'present' if TOKEN else 'MISSING (traffic endpoints will be skipped)'}")
@@ -376,6 +517,7 @@ def main() -> int:
     archive_commits()
     archive_issues()
     refresh_badge()
+    validate_data_files()
 
     failed = [name for name, ok in (("views", views_ok), ("clones", clones_ok)) if not ok]
     if failed:
