@@ -296,8 +296,8 @@
     </div>
     <div class="page-meta">
       <span class="asof">data through <b id="asOf">&hellip;</b></span>
-      <a href="https://raw.githubusercontent.com/nagusubra/traffic/main/doc/metric/industry-hackathon-lab/badge.svg">
-        <img id="badgeImg" alt="total views" src="https://raw.githubusercontent.com/nagusubra/traffic/main/doc/metric/industry-hackathon-lab/badge.svg">
+      <a href="https://nagusubra.github.io/traffic/doc/metric/industry-hackathon-lab/badge.svg">
+        <img id="badgeImg" alt="total views" src="https://nagusubra.github.io/traffic/doc/metric/industry-hackathon-lab/badge.svg">
       </a>
     </div>
   </div>
@@ -428,8 +428,9 @@
   const SLUG = "industry-hackathon-lab";
   const DATA_REPO = "nagusubra/traffic";
   const DATA_BRANCH = "main";
-  const BASE = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/.metrics/data/${SLUG}/`;
-  const BADGE = `https://raw.githubusercontent.com/${DATA_REPO}/${DATA_BRANCH}/doc/metric/${SLUG}/badge.svg`;
+  // Use GitHub Pages (no CDN cache) instead of raw.githubusercontent.com (5min-24h cache)
+  const BASE = `https://${DATA_REPO}.github.io/${DATA_REPO.split("/")[1]}/.metrics/data/${SLUG}/`;
+  const BADGE = `https://${DATA_REPO}.github.io/${DATA_REPO.split("/")[1]}/doc/metric/${SLUG}/badge.svg`;
   const UI = "'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif";
   const MONO = "'Roboto Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 

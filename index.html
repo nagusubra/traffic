@@ -180,9 +180,10 @@
 
 <script>
 (() => {
-  const RAW = "https://raw.githubusercontent.com/nagusubra/traffic/main/.metrics/data/";
+  // Use GitHub Pages (no CDN cache) instead of raw.githubusercontent.com (5min-24h cache)
+  const RAW = "https://nagusubra.github.io/traffic/.metrics/data/";
   const REPO_BASE = "https://github.com/nagusubra";
-  const BADGE_BASE = "https://raw.githubusercontent.com/nagusubra/traffic/main/doc/metric";
+  const BADGE_BASE = "https://nagusubra.github.io/traffic/doc/metric";
   // Add future repos here: one object per dashboard. Files must exist at
   // doc/metric/<slug>/ and .metrics/data/<slug>/ (the archiver writes both).
   const DASHBOARDS = [

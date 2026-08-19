@@ -2,6 +2,10 @@ name: Archive traffic
 
 on:
   schedule:
+    # Every hour at :23 past the hour. GitHub's Traffic API:
+    #   - Clones & views update hourly ← primary metric
+    #   - Referrers & popular content update daily
+    # Offset from :00 to avoid GitHub Actions schedule queue congestion.
     - cron: "23 * * * *"
   workflow_dispatch:
 
