@@ -106,22 +106,50 @@ def api_get_paged(path: str, per_page: int = 100, max_pages: int = 20, accept: s
     return out
 
 
-def merge_into(path: str, fields: list[str], keys: list[str], new_rows: list[dict]) -> None:
-    data: dict[tuple, dict] = {}
-    if os.path.exists(path):
+def append_rows(path: str, fields: list[str], keys: list[str], new_rows: list[dict]) -> None:
+    """Append new rows to a CSV without EVER modifying or deleting existing rows.
+
+    Guarantees:
+      * Existing rows (matched by ``keys``) are never touched.
+      * The file is opened in append mode, so it is never truncated or
+        re-written; only brand-new rows are appended at the end.
+      * If a row's key already exists, the new value is discarded -- the stored
+        value always wins, so no historical data can ever be overwritten or lost.
+    """
+    existing: set[tuple[str, ...]] = set()
+    has_header = False
+    if os.path.exists(path) and os.path.getsize(path) > 0:
         with open(path, newline="", encoding="utf-8") as f:
-            for row in csv.DictReader(f):
-                if row and all(row.get(k) not in (None, "") for k in keys):
-                    data[tuple(row[k] for k in keys)] = row
+            for i, row in enumerate(csv.reader(f)):
+                if not row:
+                    continue
+                if i == 0:
+                    has_header = True
+                    continue
+                key = tuple(c.strip() for c in row[: len(keys)])
+                if all(k not in (None, "") for k in key):
+                    existing.add(key)
+
+    to_add: list[dict] = []
+    seen = set(existing)
     for row in new_rows:
-        data[tuple(row[k] for k in keys)] = {k: str(row.get(k, "")) for k in fields}
+        key = tuple(str(row.get(k, "")).strip() for k in keys)
+        if key in seen:
+            continue
+        seen.add(key)
+        to_add.append({k: str(row.get(k, "")) for k in fields})
+
+    if not to_add:
+        log(f"{path} already current ({len(existing)} rows); nothing new to append")
+        return
+
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    with open(path, "w", newline="", encoding="utf-8") as f:
+    with open(path, "a", newline="", encoding="utf-8") as f:
         writer = csv.DictWriter(f, fieldnames=fields)
-        writer.writeheader()
-        for k in sorted(data):
-            writer.writerow(data[k])
-    log(f"wrote {path} ({len(data)} rows)")
+        if not has_header:
+            writer.writeheader()
+        writer.writerows(to_add)
+    log(f"appended {len(to_add)} new row(s) to {path} ({len(existing) + len(to_add)} total rows)")
 
 
 def read_all(path: str) -> list[dict]:
@@ -155,7 +183,7 @@ def archive_views() -> tuple[str, bool]:
         {"date": d["timestamp"][:10], "views": d["count"], "uniques": d["uniques"]}
         for d in data.get("views", [])
     ]
-    merge_into(os.path.join(DATA_DIR, "views.csv"), VIEWS_FIELDS, ["date"], rows)
+    append_rows(os.path.join(DATA_DIR, "views.csv"), VIEWS_FIELDS, ["date"], rows)
     dates = [d["timestamp"][:10] for d in data.get("views", [])]
     return (max(dates) if dates else today_utc()), ok
 
@@ -169,7 +197,7 @@ def archive_clones() -> bool:
         {"date": d["timestamp"][:10], "clones": d["count"], "uniques": d["uniques"]}
         for d in data.get("clones", [])
     ]
-    merge_into(os.path.join(DATA_DIR, "clones.csv"), CLONES_FIELDS, ["date"], rows)
+    append_rows(os.path.join(DATA_DIR, "clones.csv"), CLONES_FIELDS, ["date"], rows)
     return ok
 
 
@@ -178,7 +206,7 @@ def archive_referrers(asof: str) -> None:
         {"date": asof, "referrer": r.get("referrer", ""), "count": r.get("count", 0), "uniques": r.get("uniques", 0)}
         for r in (api_get(f"/repos/{REPO}/traffic/popular/referrers") or [])
     ]
-    merge_into(os.path.join(DATA_DIR, "referrers.csv"), REFERRERS_FIELDS, ["date", "referrer"], rows)
+    append_rows(os.path.join(DATA_DIR, "referrers.csv"), REFERRERS_FIELDS, ["date", "referrer"], rows)
 
 
 def archive_paths(asof: str) -> None:
@@ -192,7 +220,7 @@ def archive_paths(asof: str) -> None:
         }
         for p in (api_get(f"/repos/{REPO}/traffic/popular/paths") or [])
     ]
-    merge_into(os.path.join(DATA_DIR, "paths.csv"), PATHS_FIELDS, ["date", "path"], rows)
+    append_rows(os.path.join(DATA_DIR, "paths.csv"), PATHS_FIELDS, ["date", "path"], rows)
 
 
 def archive_repo() -> None:
@@ -214,7 +242,7 @@ def archive_repo() -> None:
             "releases": releases,
         }
     ]
-    merge_into(os.path.join(DATA_DIR, "repo.csv"), REPO_FIELDS, ["date"], rows)
+    append_rows(os.path.join(DATA_DIR, "repo.csv"), REPO_FIELDS, ["date"], rows)
     created = (data.get("created_at") or "").split("T")[0]
     if created:
         archive_star_history(created)
@@ -229,7 +257,7 @@ def archive_star_history(created: str) -> None:
         log("[warn] stargazers fetch empty/failed; keeping existing stars.csv")
         return
     rows = [{"date": r["date"], "stars": r["value"]} for r in cumulative_series(created, [s.get("starred_at", "") for s in stars])]
-    merge_into(os.path.join(DATA_DIR, "stars.csv"), STARS_FIELDS, ["date"], rows)
+    append_rows(os.path.join(DATA_DIR, "stars.csv"), STARS_FIELDS, ["date"], rows)
 
 
 def archive_fork_history(created: str) -> None:
@@ -238,7 +266,7 @@ def archive_fork_history(created: str) -> None:
         log("[warn] forks fetch empty/failed; keeping existing forks.csv")
         return
     rows = [{"date": r["date"], "forks": r["value"]} for r in cumulative_series(created, [f.get("created_at", "") for f in forks])]
-    merge_into(os.path.join(DATA_DIR, "forks.csv"), FORKS_FIELDS, ["date"], rows)
+    append_rows(os.path.join(DATA_DIR, "forks.csv"), FORKS_FIELDS, ["date"], rows)
 
 
 def archive_commits() -> None:
@@ -250,7 +278,7 @@ def archive_commits() -> None:
         {"week_start": datetime.fromtimestamp(int(w["week"]), tz=timezone.utc).date().isoformat(), "total": w.get("total", 0)}
         for w in data if isinstance(w, dict) and w.get("total")
     ]
-    merge_into(os.path.join(DATA_DIR, "commits.csv"), COMMITS_FIELDS, ["week_start"], rows)
+    append_rows(os.path.join(DATA_DIR, "commits.csv"), COMMITS_FIELDS, ["week_start"], rows)
 
 
 def archive_issues() -> None:
@@ -292,7 +320,7 @@ def archive_issues() -> None:
         }
         for d in sorted(all_days)
     ]
-    merge_into(os.path.join(DATA_DIR, "issues.csv"), ISSUES_FIELDS, ["date"], rows)
+    append_rows(os.path.join(DATA_DIR, "issues.csv"), ISSUES_FIELDS, ["date"], rows)
 
 
 def format_int(n) -> str:
