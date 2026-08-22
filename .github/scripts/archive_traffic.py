@@ -33,9 +33,11 @@ Stdlib only.
 from __future__ import annotations
 
 import csv
+import http.client
 import json
 import os
 import sys
+import time
 import urllib.error
 import urllib.request
 from collections import Counter
@@ -75,23 +77,43 @@ def today_utc() -> date:
     return datetime.now(timezone.utc).date()
 
 
-def api_get(path: str, accept: str = "application/vnd.github+json"):
-    req = urllib.request.Request(API + path, method="GET")
-    req.add_header("Accept", accept)
-    req.add_header("User-Agent", "repo-traffic-archiver")
-    req.add_header("X-GitHub-Api-Version", "2022-11-28")
-    if TOKEN:
-        req.add_header("Authorization", f"Bearer {TOKEN}")
-    try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            body = resp.read().decode("utf-8")
-            return json.loads(body) if body.strip() else None
-    except urllib.error.HTTPError as e:
-        log(f"[warn] GET {path} -> HTTP {e.code} ({e.reason})")
-        return None
-    except (urllib.error.URLError, json.JSONDecodeError) as e:
-        log(f"[warn] GET {path} -> {e}")
-        return None
+def api_get(path: str, accept: str = "application/vnd.github+json", retries: int = 3):
+    for attempt in range(1, retries + 1):
+        req = urllib.request.Request(API + path, method="GET")
+        req.add_header("Accept", accept)
+        req.add_header("User-Agent", "repo-traffic-archiver")
+        req.add_header("X-GitHub-Api-Version", "2022-11-28")
+        if TOKEN:
+            req.add_header("Authorization", f"Bearer {TOKEN}")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as resp:
+                body = resp.read().decode("utf-8")
+                return json.loads(body) if body.strip() else None
+        except urllib.error.HTTPError as e:
+            if e.code in (429, 500, 502, 503, 504) and attempt < retries:
+                wait = 2 ** attempt
+                log(f"[warn] GET {path} -> HTTP {e.code} ({e.reason}); retrying in {wait}s ({attempt}/{retries})")
+                time.sleep(wait)
+                continue
+            log(f"[warn] GET {path} -> HTTP {e.code} ({e.reason})")
+            return None
+        except (http.client.RemoteDisconnected, ConnectionError, http.client.HTTPException) as e:
+            if attempt < retries:
+                wait = 2 ** attempt
+                log(f"[warn] GET {path} -> {type(e).__name__}: {e}; retrying in {wait}s ({attempt}/{retries})")
+                time.sleep(wait)
+                continue
+            log(f"[warn] GET {path} -> {type(e).__name__}: {e}")
+            return None
+        except (urllib.error.URLError, json.JSONDecodeError) as e:
+            if isinstance(e, urllib.error.URLError) and attempt < retries:
+                wait = 2 ** attempt
+                log(f"[warn] GET {path} -> {e}; retrying in {wait}s ({attempt}/{retries})")
+                time.sleep(wait)
+                continue
+            log(f"[warn] GET {path} -> {e}")
+            return None
+    return None
 
 
 def api_get_paged(path: str, per_page: int = 100, max_pages: int = 20, accept: str = "application/vnd.github+json") -> list:
@@ -250,7 +272,7 @@ def archive_views() -> tuple[str, bool]:
     ]
     append_rows(os.path.join(DATA_DIR, "views.csv"), VIEWS_FIELDS, ["date"], rows)
     dates = [d["timestamp"][:10] for d in data.get("views", [])]
-    return (max(dates) if dates else today_utc()), ok
+    return (max(dates) if dates else today_utc().isoformat()), ok
 
 
 def archive_clones() -> bool:
