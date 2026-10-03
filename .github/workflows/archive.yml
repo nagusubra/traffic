@@ -22,7 +22,7 @@ jobs:
     if: github.event.repository.fork == false
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Archive traffic
         env:
