@@ -332,19 +332,69 @@ def archive_repo() -> None:
     append_rows(os.path.join(DATA_DIR, "repo.csv"), REPO_FIELDS, ["date"], rows)
     created = (data.get("created_at") or "").split("T")[0]
     if created:
-        archive_star_history(created)
+        archive_star_history(created, data.get("stargazers_count"))
         archive_fork_history(created)
 
 
-def archive_star_history(created: str) -> None:
-    stars = api_get_paged(f"/repos/{REPO}/stargazers", accept="application/vnd.github.star+json")
-    if not stars:
-        # e.g. 403 from a token that cannot list stargazers (GitHub restricts the
-        # endpoint to admins/collaborators). Never clobber existing history.
-        log("[warn] stargazers fetch empty/failed; keeping existing stars.csv")
-        return
-    rows = [{"date": r["date"], "stars": r["value"]} for r in cumulative_series(created, [s.get("starred_at", "") for s in stars])]
+def archive_star_history(created: str, expected_total: int | None = None) -> None:
+    rows = _star_history_rows(created, expected_total)
+    if rows is None:
+        # Fallback: per-user stargazers listing with star timestamps. Since
+        # GitHub's July 2026 restriction this 403s for fine-grained tokens
+        # (admins/collaborators only). Never clobber existing history.
+        stars = api_get_paged(f"/repos/{REPO}/stargazers", accept="application/vnd.github.star+json")
+        if not stars:
+            log("[warn] stargazers fetch empty/failed; keeping existing stars.csv")
+            return
+        rows = [{"date": r["date"], "stars": r["value"]} for r in cumulative_series(created, [s.get("starred_at", "") for s in stars])]
     append_rows(os.path.join(DATA_DIR, "stars.csv"), STARS_FIELDS, ["date"], rows)
+
+
+def _star_history_rows(created: str, expected_total: int | None) -> list[dict] | None:
+    """Daily cumulative star counts via GET /stargazers/history.
+
+    The history endpoint returns per-day star counts in weekly buckets and,
+    unlike the per-user stargazers listing, needs no admin/collaborator
+    access (verified working even unauthenticated for public repos).
+    Returns None when the endpoint is unavailable so the caller falls back.
+    Day boundaries are not guaranteed UTC by GitHub; under append-only merge
+    any ±1d fuzz on old dates is harmless (stored rows always win).
+    """
+    weeks = api_get_paged(f"/repos/{REPO}/stargazers/history", per_page=30, max_pages=100)
+    if not weeks:
+        if expected_total == 0:
+            weeks = []
+        else:
+            return None
+    daily: Counter = Counter()
+    for w in weeks:
+        try:
+            sunday = datetime.fromtimestamp(int(w["week"]), tz=timezone.utc).date()
+            days = w.get("days", [])
+        except (TypeError, ValueError, AttributeError):
+            continue
+        for i, n in enumerate(days[:7]):
+            try:
+                n = int(n)
+            except (TypeError, ValueError):
+                continue
+            if n:
+                daily[(sunday + timedelta(days=i)).isoformat()] += n
+    start = date.fromisoformat(created)
+    end = today_utc()
+    rows: list[dict] = []
+    running = 0
+    cur = start
+    while cur <= end:
+        running += daily.get(cur.isoformat(), 0)
+        rows.append({"date": cur.isoformat(), "stars": running})
+        cur += timedelta(days=1)
+    if expected_total is not None and expected_total > 0 and running == 0:
+        # Endpoint returned no stars while the repo reports some; don't write.
+        log(f"[warn] star history sums to 0 but repo reports {expected_total} stars; keeping existing stars.csv")
+        return None
+    log(f"star history via stargazers/history endpoint ({len(weeks)} week(s), total {running})")
+    return rows
 
 
 def archive_fork_history(created: str) -> None:

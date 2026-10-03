@@ -46,5 +46,6 @@ Data layout per repo (`.metrics/data/<repo>/`):
 | `commits.csv` | weekly commit totals |
 | `issues.csv` | daily issues/PRs opened, closed, merged |
 
-GitHub restricts `stargazers` for some token scopes, so `stars.csv` may be
-frozen at the last successfully archived value.
+Star history is rebuilt from the `stargazers/history` endpoint (daily counts,
+no admin access needed since GitHub's July 2026 stargazers restriction); if
+that endpoint ever fails, `stars.csv` keeps its last archived values.
